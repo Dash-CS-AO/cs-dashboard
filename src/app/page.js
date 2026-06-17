@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { getTodaysAgents, getCycleInfo, AGENTS } from './data/agents';
 
+const PASSWORD = 'csSMPLEWolf2026!';
+
 function initials(name) {
   return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
 }
@@ -18,8 +20,60 @@ function Toast({ message, onDone }) {
   return <div className="toast">{message}</div>;
 }
 
+// ── Password Screen ───────────────────────────────────────────────────────────
+function PasswordScreen({ onUnlock }) {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState(false);
+  const [show, setShow] = useState(false);
+
+  function attempt() {
+    if (value === PASSWORD) {
+      localStorage.setItem('cs_auth', 'true');
+      onUnlock();
+    } else {
+      setError(true);
+      setValue('');
+      setTimeout(() => setError(false), 2000);
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#FDF6F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ background: '#fff', border: '0.5px solid rgba(122,63,63,0.15)', borderRadius: 16, padding: '2.5rem 2rem', width: 340, boxShadow: '0 4px 24px rgba(122,63,63,0.08)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 24, color: '#3D1F1F', marginBottom: 4 }}>S.MPLE</div>
+          <div style={{ fontSize: 13, color: '#7A5A58' }}>CS Command Center</div>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#7A5A58', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Password</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={show ? 'text' : 'password'}
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && attempt()}
+              placeholder="Enter password"
+              autoFocus
+              style={{ width: '100%', padding: '9px 36px 9px 12px', borderRadius: 8, border: `1px solid ${error ? '#C0392B' : 'rgba(122,63,63,0.25)'}`, fontSize: 14, fontFamily: 'Inter,sans-serif', outline: 'none', boxSizing: 'border-box', background: error ? '#FEF0EE' : '#fff', transition: 'border 0.15s' }}
+            />
+            <button onClick={() => setShow(s => !s)}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#B89098', fontSize: 15, padding: 0 }}>
+              <i className={`ti ${show ? 'ti-eye-off' : 'ti-eye'}`} />
+            </button>
+          </div>
+          {error && <div style={{ fontSize: 12, color: '#C0392B', marginTop: 6 }}>Incorrect password — try again</div>}
+        </div>
+        <button onClick={attempt}
+          style={{ width: '100%', padding: '10px', background: '#7A3F3F', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>
+          Unlock dashboard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-function Sidebar({ active, setActive }) {
+function Sidebar({ active, setActive, onLock }) {
   const nav = [
     { id: 'overview', label: 'Overview', icon: 'ti-layout-dashboard' },
     { id: 'outreach', label: 'Agent Outreach', icon: 'ti-phone-outgoing' },
@@ -50,6 +104,9 @@ function Sidebar({ active, setActive }) {
             <div className="role">Client Success Advisor</div>
           </div>
         </div>
+        <button onClick={onLock} style={{ marginTop: 10, width: '100%', background: 'transparent', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '5px 10px', color: 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer', fontFamily: 'Inter,sans-serif', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          <i className="ti ti-lock" style={{ fontSize: 12 }} /> Lock dashboard
+        </button>
       </div>
     </aside>
   );
@@ -109,7 +166,6 @@ function Overview({ setActive }) {
           </div>
         ))}
       </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
         <div>
           <p className="section-label" style={{ marginBottom: 8 }}>Due today</p>
@@ -129,7 +185,6 @@ function Overview({ setActive }) {
             </div>
           ))}
         </div>
-
         <div>
           <p className="section-label" style={{ marginBottom: 8 }}>This week</p>
           {weekTasks.map(t => (
@@ -149,12 +204,9 @@ function Overview({ setActive }) {
           ))}
         </div>
       </div>
-
       <p className="section-label" style={{ marginBottom: 8 }}>MAU tracker — {monthName} · agents pending confirmation</p>
       {pendingMAU.length === 0
-        ? <div style={{ padding: '12px 14px', background: '#EAF7EE', borderRadius: 10, fontSize: 13, color: '#1A7A4A' }}>
-            <i className="ti ti-check" style={{ marginRight: 6 }} />All agents confirmed for this month
-          </div>
+        ? <div style={{ padding: '12px 14px', background: '#EAF7EE', borderRadius: 10, fontSize: 13, color: '#1A7A4A' }}><i className="ti ti-check" style={{ marginRight: 6 }} />All agents confirmed for this month</div>
         : <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {pendingMAU.map((e, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: '#FAF0EE', borderRadius: 8 }}>
@@ -168,8 +220,7 @@ function Overview({ setActive }) {
           </div>
       }
       <div style={{ marginTop: 16, padding: '10px 14px', background: '#FAF0EE', borderRadius: 10, fontSize: 12, color: '#7A5A58' }}>
-        <i className="ti ti-info-circle" style={{ marginRight: 6 }} />
-        Stats update as you work through each section. Click any task to jump straight to it.
+        <i className="ti ti-info-circle" style={{ marginRight: 6 }} />Stats update as you work through each section. Click any task to jump straight to it.
       </div>
     </div>
   );
@@ -182,8 +233,7 @@ function AgentOutreach() {
   const [agents] = useState(() => getTodaysAgents(5));
   const [cycleInfo] = useState(() => getCycleInfo());
   const [contacted, setContacted] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('contacted_' + new Date().toDateString()) || '[]'); }
-    catch { return []; }
+    try { return JSON.parse(localStorage.getItem('contacted_' + new Date().toDateString()) || '[]'); } catch { return []; }
   });
   const [toast, setToast] = useState(null);
 
@@ -193,7 +243,6 @@ function AgentOutreach() {
     localStorage.setItem('contacted_' + todayKey, JSON.stringify(updated));
     setToast('Marked as contacted ✓');
   }
-
   function markAll() {
     const all = agents.map(a => a.email);
     setContacted(all);
@@ -329,17 +378,13 @@ function FeedbackSurvey() {
   const [form, setForm] = useState({ name: '', score: '', comment: '' });
   const [toast, setToast] = useState(null);
 
-  function saveItems(updated) {
-    setItems(updated);
-    localStorage.setItem('feedback_items', JSON.stringify(updated));
-  }
+  function saveItems(updated) { setItems(updated); localStorage.setItem('feedback_items', JSON.stringify(updated)); }
 
   function addItem() {
     if (!form.name || !form.score) return;
     const score = parseInt(form.score);
     if (score >= 7) { setToast('Score is 7 or above — only flagging under 7'); return; }
-    const updated = [...items, { name: form.name.trim(), score, comment: form.comment.trim(), id: Date.now() }];
-    saveItems(updated);
+    saveItems([...items, { name: form.name.trim(), score, comment: form.comment.trim(), id: Date.now() }]);
     setForm({ name: '', score: '', comment: '' });
     setToast('Score flagged ✓');
   }
@@ -399,11 +444,9 @@ function MAUTracker() {
     setConfirmed(updated);
     localStorage.setItem('mau_confirmed', JSON.stringify(updated));
   }
-
   function addEntry() {
     if (!form.name.trim()) return;
-    const updated = { ...entries, [form.week]: [...entries[form.week], form.name.trim()] };
-    saveEntries(updated);
+    saveEntries({ ...entries, [form.week]: [...entries[form.week], form.name.trim()] });
     setToast(`${form.name.trim()} added to ${form.week} ✓`);
     setForm(f => ({ ...f, name: '' }));
   }
@@ -416,14 +459,12 @@ function MAUTracker() {
     <div>
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
       <div className="info-box">Drop attendee names from the S.MPLE onboarding Slack channel into the correct week. Toggle the checkmark when an agent has a confirmed "yes" in the tracker.</div>
-
       <div className="stat-row" style={{ marginBottom: 16 }}>
         <div className="stat"><div className="stat-n">{totalMAU}</div><div className="stat-l">Total added</div></div>
         <div className="stat"><div className="stat-n">{confirmedCount}</div><div className="stat-l">Confirmed yes</div></div>
         <div className="stat"><div className="stat-n">{totalMAU - confirmedCount}</div><div className="stat-l">Pending</div></div>
         <div className="stat"><div className="stat-n">{mauPct}%</div><div className="stat-l">Confirmation rate</div></div>
       </div>
-
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <a href="https://serhant.enterprise.slack.com/archives/C07TQHNPKCG" target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
           <button className="btn btn-gold"><i className="ti ti-brand-slack" /> Onboarding Slack</button>
@@ -432,7 +473,6 @@ function MAUTracker() {
           <button className="btn btn-ghost"><i className="ti ti-external-link" /> MAU Tracker Excel</button>
         </a>
       </div>
-
       <div className="grid-2" style={{ marginBottom: 16 }}>
         {weeks.map(week => (
           <div className="card" key={week}>
@@ -460,7 +500,6 @@ function MAUTracker() {
           </div>
         ))}
       </div>
-
       <p className="section-label" style={{ marginBottom: 8 }}>Add attendee</p>
       <div style={{ display: 'flex', gap: 8 }}>
         <input type="text" placeholder="Attendee name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -529,13 +568,26 @@ const SECTIONS = {
 const COMPONENTS = { overview: Overview, outreach: AgentOutreach, consultations: Consultations, top5: Top5, feedback: FeedbackSurvey, mau: MAUTracker, eom: EOMReport };
 
 export default function App() {
+  const [unlocked, setUnlocked] = useState(false);
   const [active, setActive] = useState('overview');
+
+  useEffect(() => {
+    if (localStorage.getItem('cs_auth') === 'true') setUnlocked(true);
+  }, []);
+
+  function handleLock() {
+    localStorage.removeItem('cs_auth');
+    setUnlocked(false);
+  }
+
+  if (!unlocked) return <PasswordScreen onUnlock={() => setUnlocked(true)} />;
+
   const section = SECTIONS[active];
   const Component = COMPONENTS[active];
 
   return (
     <div className="app-shell">
-      <Sidebar active={active} setActive={setActive} />
+      <Sidebar active={active} setActive={setActive} onLock={handleLock} />
       <main className="main-content">
         <div className="page-header">
           <h1>{section.title}</h1>
